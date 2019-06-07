@@ -24,7 +24,7 @@ pub trait Trait: balances::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
-const MAX_FUNDINGS_PER_BLOCK: usize = 10;
+const MAX_FUNDINGS_PER_BLOCK: usize = 3;
 
 decl_event!(
     pub enum Event<T>
@@ -36,7 +36,7 @@ decl_event!(
     {
         CreateFunding(AccountId, Hash, Balance, Balance, BlockNumber),
         Invest(Hash, AccountId, Balance),
-        FundingFinalized(Hash, Balance, BlockNumber),
+        FundingFinalized(Hash, Balance, BlockNumber, bool),
     }
 );
 
@@ -76,6 +76,10 @@ decl_storage! {
         // The total amount of money the project has got
         FundingSupportedAmount get(total_amount_of_funding): map T::Hash => T::Balance;
 
+        // Get the status of a funding project: true-success false-fail
+        FundingStatus get(funding_status): map T::Hash => bool;
+
+        // Record the number of funding
         Nonce: u64;
     }
 }
@@ -96,6 +100,8 @@ decl_module!{
                 .using_encoded(<T as system::Trait>::Hashing::hash);
             // ensure that the funding id is unique
             ensure!(!<FundingOwner<T>>::exists(&funding_id), "Funding already exists");
+            // ensure that the support_money less than target_money
+            ensure!(support_money <= target_money, "You already have enough money");
             // create a new funding
             let new_funding = Funding{
                 funding_id: funding_id.clone(),
@@ -134,8 +140,9 @@ decl_module!{
             <OwnedFundingCount<T>>::insert(&sender, new_owned_funding_count);
             <OwnedFundingIndex<T>>::insert((sender.clone(), funding_id.clone()), owned_funding_count);
 
-            Self::not_invest_before(sender.clone(), funding_id.clone(), support_money.clone())?;
-
+            if support_money > T::Balance::sa(0) {
+                Self::not_invest_before(sender.clone(), funding_id.clone(), support_money.clone())?;
+            }
             // add the nonce
             <Nonce<T>>::mutate(|n| *n += 1);
 
@@ -161,6 +168,65 @@ decl_module!{
             Self::deposit_event(RawEvent::Invest(funding_id, sender, invest_amount));
 
             Ok(())
+        }
+
+        fn on_finalize() {
+            // get all the fundings of the block
+            let block_number = <system::Module<T>>::block_number();
+            let fundings = Self::funding_expire_at(block_number);
+
+
+            'outer: for funding in &fundings{
+                // Get the amount of money that the funding had raised
+                let amount_of_funding = Self::total_amount_of_funding(funding.funding_id);
+                // If the money had raised more than the target_money, then the funding is success
+                if amount_of_funding >= funding.target_money{
+                    // Make the status success
+                    <FundingStatus<T>>::insert(funding.funding_id.clone(), true);
+                    // Get the owner of the funding
+                    let _owner = Self::owner_of(funding.funding_id);
+                    match _owner {
+                        Some(owner) => {
+                            // Get all the investors
+                            let investors = Self::invest_accounts(funding.funding_id);
+                            let mut no_error = true;
+                            // Iterate every investor, unreserve the money that he/she had invested and transfer it to owner
+                            'inner: for investor in &investors{
+                                let invest_balance = Self::invest_amount_of((funding.funding_id, investor.clone()));
+                                let _ = <balances::Module<T>>::unreserve(&investor, invest_balance.clone());
+                                // If the investor is owner, just unreserve the money
+                                if investor == &owner{ continue;}
+                                let _currency_transfer = <balances::Module<T> as Currency<_>>::transfer(&investor, &owner, invest_balance);
+                                match _currency_transfer {
+                                    Err(_e) => {
+                                        no_error = false;
+                                        break 'inner;
+                                    },
+                                    Ok(_v) => {}
+                                }
+                            }
+                            // If all the processes are right then reserve all money of the funding
+                            if no_error {
+                                let _ = <balances::Module<T>>::reserve(&owner, amount_of_funding);
+                                // deposit the event
+                                Self::deposit_event(RawEvent::FundingFinalized(funding.funding_id, amount_of_funding, block_number, true));
+                            }
+                        },
+                        None => continue,
+                    }
+                }else{ // refund all of the money
+                    // Make the status fail
+                    <FundingStatus<T>>::insert(funding.funding_id.clone(), false);
+                    let funding_accounts = Self::invest_accounts(funding.funding_id);
+                    // refund all the money
+                    for account in funding_accounts {
+                        let invest_balance = Self::invest_amount_of((funding.funding_id, account.clone()));
+                        let _ = <balances::Module<T>>::unreserve(&account, invest_balance);
+                    }
+                    // deposit the event
+                    Self::deposit_event(RawEvent::FundingFinalized(funding.funding_id, amount_of_funding, block_number, false));
+                }
+            }
         }
     }
 }
