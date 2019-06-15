@@ -1,0 +1,22 @@
+[dependencies.substrate-crowdfunding-runtime]
+default-features = false
+path = '..'
+[profile.release]
+lto = true
+panic = 'abort'
+
+[package]
+authors = ['Parity Technologies <admin@parity.io>']
+edition = '2018'
+name = 'substrate-crowdfunding-runtime-wasm'
+version = '1.0.0'
+
+[workspace]
+members = []
+
+[lib]
+crate-type = ['cdylib']
+
+[features]
+default = []
+std = ['substrate-crowdfunding-runtime/std']
