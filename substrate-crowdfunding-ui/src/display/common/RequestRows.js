@@ -16,7 +16,6 @@ export class RequestRows extends ReactiveComponent{
         return <span>No requests found yet</span>
     }
     readyRender() {
-        console.log("I'm Here RequestRows");
         let requests = [];
         // All requests
         for(var i=0; i < this.state.count; i++){

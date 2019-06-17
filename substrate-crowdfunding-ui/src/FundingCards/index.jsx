@@ -19,7 +19,7 @@ class FundingCard extends ReactiveComponent {
         let status = funding.status;
         let onCardClick = this.state.onCardClick;
         let detail = {
-            fundingId: funding.funding_id,
+            fundingId: '0x' + bytesToHex(funding.funding_id),
             status: funding.status
         };
         return <Card onClick={() => onCardClick && onCardClick(detail)}>

@@ -55,7 +55,9 @@ pub type BlockNumber = u64;
 /// Index of an account's extrinsic in the chain.
 pub type Nonce = u64;
 
+/// Import funding module
 mod funding_factory;
+/// Import request module
 mod request;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
@@ -187,6 +189,7 @@ impl sudo::Trait for Runtime {
 	type Proposal = Call;
 }
 
+// import the trait of our module
 impl funding_factory::Trait for Runtime {
 	type Event = Event;
 }
@@ -208,7 +211,9 @@ construct_runtime!(
 		Indices: indices,
 		Balances: balances,
 		Sudo: sudo,
+		// import funding part
 		FundingFactory: funding_factory::{Module, Call, Storage, Event<T>},
+		// import request part
 		Request: request::{Module, Call, Storage, Event<T>},
 	}
 );

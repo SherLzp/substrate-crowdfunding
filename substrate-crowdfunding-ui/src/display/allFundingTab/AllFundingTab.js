@@ -44,7 +44,7 @@ class Invest extends ReactiveComponent{
     readyRender(){
         return <Segment style={{ margin: '1em' }} padded>
             <Header as='h2'>
-                <Icon name='send' />
+                <Icon name='thumbs up' />
                 <Header.Content>
                     Let's invest
                     <Header.Subheader>Support your favourite funding project</Header.Subheader>
@@ -80,7 +80,7 @@ class Invest extends ReactiveComponent{
             </div>
             <TransactButton
                 content="Invest"
-                icon='send'
+                icon='thumbs up'
                 tx={{
                     sender: runtime.indices.tryIndex(this.skAccount),
                     call: calls.fundingFactory.invest(this.fundingId, this.amount),

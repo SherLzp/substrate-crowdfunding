@@ -60,7 +60,7 @@ class Request extends ReactiveComponent{
     readyRender(){
         return (<Segment style={{ margin: '1em' }} padded>
                 <Header as='h2'>
-                    <Icon name='send' />
+                    <Icon name='align center' />
                     <Header.Content>
                         All Requests
                         <Header.Subheader>Support the owner's cost</Header.Subheader>

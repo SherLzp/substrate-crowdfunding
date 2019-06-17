@@ -1,68 +1,81 @@
 # substrate-crowdfunding
 
-A new SRML-based Substrate node, ready for hacking.
+This is crowdfunding project based on substrate.
+
+![result1](assets/result1.png)
+
+![result2](assets/result2.png)
+
+![result3](assets/result3.png)
 
 # Building
+
+Install Node(10.16.0) and Yarn:
+
+```shell
+$ curl -sL https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh -o install_nvm.sh
+$ sudo chmod +x install_nvm.sh
+$ ./install_nvm.sh
+$ source ~/.profile
+$ nvm install 10.16.0
+# check `node -v` and `npm -v` then
+$ npm install yarn -g
+```
 
 Install Rust:
 
 ```bash
-curl https://sh.rustup.rs -sSf | sh
+$ curl https://getsubstrate.io -sSf | bash -s -- --fast
 ```
 
-Install required tools:
+Clone the project:
 
-```bash
-./scripts/init.sh
+```shell
+$ git clone https://github.com/SherLzp/substrate-crowdfunding.git
 ```
 
-Build the WebAssembly binary:
+Compile the project:
 
-```bash
-./scripts/build.sh
+Substrate Part:
+
+```shell
+$ cd substrate-crowdfunding/substrate-crowdfunding
+$ ./scripts/build.sh
+$ cargo build --release
 ```
 
-Build all native code:
+UI Part:
 
-```bash
-cargo build
+```shell
+$ cd substrate-crowdfunding/substrate-crowdfunding-ui
+$ yarn install
 ```
 
 # Run
 
-You can start a development chain with:
+Substrate:
 
-```bash
-cargo run -- --dev
+```shell
+$ cd substrate-crowdfunding/substrate-crowdfunding
+$ ./target/release/substrate-crowdfunding --dev
 ```
 
-Detailed logs may be shown by running the node with the following environment variables set: `RUST_LOG=debug RUST_BACKTRACE=1 cargo run -- --dev`.
+UI:
 
-If you want to see the multi-node consensus algorithm in action locally, then you can create a local testnet with two validator nodes for Alice and Bob, who are the initial authorities of the genesis chain that have been endowed with testnet units. Give each node a name and expose them so they are listed on the Polkadot [telemetry site](https://telemetry.polkadot.io/#/Local%20Testnet). You'll need two terminal windows open.
-
-We'll start Alice's substrate node first on default TCP port 30333 with her chain database stored locally at `/tmp/alice`. The bootnode ID of her node is `QmQZ8TjTqeDj3ciwr93EJ95hxfDsb9pEYDizUAbWpigtQN`, which is generated from the `--node-key` value that we specify below:
-
-```bash
-cargo run -- \
-  --base-path /tmp/alice \
-  --chain=local \
-  --alice \
-  --node-key 0000000000000000000000000000000000000000000000000000000000000001 \
-  --telemetry-url ws://telemetry.polkadot.io:1024 \
-  --validator
+```shell
+$ cd substrate-crowdfunding/substrate-crowdfunding-ui
+$ yarn run dev
 ```
 
-In the second terminal, we'll start Bob's substrate node on a different TCP port of 30334, and with his chain database stored locally at `/tmp/bob`. We'll specify a value for the `--bootnodes` option that will connect his node to Alice's bootnode ID on TCP port 30333:
+Access via:
 
-```bash
-cargo run -- \
-  --base-path /tmp/bob \
-  --bootnodes /ip4/127.0.0.1/tcp/30333/p2p/QmQZ8TjTqeDj3ciwr93EJ95hxfDsb9pEYDizUAbWpigtQN \
-  --chain=local \
-  --bob \
-  --port 30334 \
-  --telemetry-url ws://telemetry.polkadot.io:1024 \
-  --validator
-```
+http://localhost:8000
 
-Additional CLI usage options are available and may be shown by running `cargo run -- --help`.
+# Tutorial
+
+If you are interested in the project, you can read the tutorial here:
+
+[Substrate-Crowdfunding Tutorial Part1](https://www.sher.vip/article/29)
+
+[Substrate-Crowdfunding Tutorial Part2](https://www.sher.vip/article/30)
+

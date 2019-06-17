@@ -66,7 +66,7 @@ class CreateFunding extends ReactiveComponent{
     readyRender(){
         return <Segment style={{ margin: '1em' }} padded>
             <Header as='h2'>
-                <Icon name='send' />
+                <Icon name='thumbs up' />
                 <Header.Content>
                     Let's create a crowdfunding project
                     <Header.Subheader>Feel free to create your crowdfunding project</Header.Subheader>

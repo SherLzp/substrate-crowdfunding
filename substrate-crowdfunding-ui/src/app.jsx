@@ -392,7 +392,7 @@ class CrowdFundingSegment extends React.Component {
     render() {
         return <Segment style={{margin: '1em'}} padded>
             <Header as='h2'>
-                <Icon name='paw'/>
+                <Icon name='dollar sign'/>
                 <Header.Content>
                     CrowdFunding
                     <Header.Subheader>There are total <Pretty value={runtime.fundingFactory.allFundingCount}/> funding
