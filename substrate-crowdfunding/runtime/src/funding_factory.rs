@@ -216,22 +216,23 @@ decl_module!{
 impl<T: Trait> Module<T> {
 
     fn mint(sender: T::AccountId, funding_id: T::Hash, expiry: T::BlockNumber, support_money: T::Balance, new_funding: Funding<T::Hash, T::AccountId, T::Balance, T::BlockNumber>) -> Result{
+
+        let all_funding_count = Self::all_funding_count();
+        let new_all_funding_count = all_funding_count.checked_add(1).ok_or("Overflow adding a new funding to total fundings")?;
+
+        let owned_funding_count = Self::owned_funding_count(&sender);
+        let new_owned_funding_count = owned_funding_count.checked_add(1).ok_or("Overflow adding a new funding to account balance")?;
+
         // change the global states
         <Fundings<T>>::insert(funding_id.clone(), new_funding.clone());
         <FundingOwner<T>>::insert(funding_id.clone(), sender.clone());
 
         <FundingsByBlockNumber<T>>::mutate(expiry, |fundings| fundings.push(funding_id.clone()));
 
-        let all_funding_count = Self::all_funding_count();
-        let new_all_funding_count = all_funding_count.checked_add(1).ok_or("Overflow adding a new funding to total fundings")?;
-
         // change the state of all fundings
         <AllFundingArray<T>>::insert(&all_funding_count, funding_id.clone());
         <AllFundingCount<T>>::put(new_all_funding_count);
         <AllFundingIndex<T>>::insert(funding_id.clone(), all_funding_count);
-
-        let owned_funding_count = Self::owned_funding_count(&sender);
-        let new_owned_funding_count = owned_funding_count.checked_add(1).ok_or("Overflow adding a new funding to account balance")?;
 
         // change the state of owner related fundings
         <OwnedFundingArray<T>>::insert((sender.clone(), owned_funding_count.clone()), funding_id.clone());
@@ -241,6 +242,7 @@ impl<T: Trait> Module<T> {
         if support_money > T::Balance::sa(0) {
             Self::not_invest_before(sender.clone(), funding_id.clone(), support_money.clone())?;
         }
+
         // add the nonce
         <Nonce<T>>::mutate(|n| *n += 1);
 
@@ -289,6 +291,9 @@ impl<T: Trait> Module<T> {
         let invested_funding_count = Self::invested_funding_count(&sender);
         let new_invested_funding_count = invested_funding_count.checked_add(1).ok_or("Overflow adding a new invested funding")?;
 
+        let investor_count = <InvestAccountsCount<T>>::get(&funding_id);
+        let new_investor_count = investor_count.checked_add(1).ok_or("Overflow adding the total number of investors of a funding project")?;
+
         // get the funding
         let funding = Self::funding_by_id(&funding_id);
         // ensure that the project is valid to invest
@@ -302,8 +307,6 @@ impl<T: Trait> Module<T> {
         <InvestAccounts<T>>::mutate(&funding_id, |accounts| accounts.push(sender.clone()));
 
         // add total support count
-        let investor_count = <InvestAccountsCount<T>>::get(&funding_id);
-        let new_investor_count = investor_count.checked_add(1).ok_or("Overflow adding the total number of investors of a funding project")?;
         <InvestAccountsCount<T>>::insert(funding_id.clone(), new_investor_count);
 
         // change the state of invest related fields
