@@ -227,7 +227,7 @@ impl<T: Trait> Module<T> {
         <Fundings<T>>::insert(funding_id.clone(), new_funding.clone());
         <FundingOwner<T>>::insert(funding_id.clone(), sender.clone());
 
-        <FundingsByBlockNumber<T>>::mutate(expiry, |fundings| fundings.push(funding_id.clone()));
+        <FundingsByBlockNumber<T>>::mutate(expiry.clone(), |fundings| fundings.push(funding_id.clone()));
 
         // change the state of all fundings
         <AllFundingArray<T>>::insert(&all_funding_count, funding_id.clone());
@@ -240,7 +240,21 @@ impl<T: Trait> Module<T> {
         <OwnedFundingIndex<T>>::insert((sender.clone(), funding_id.clone()), owned_funding_count);
 
         if support_money > T::Balance::sa(0) {
-            Self::not_invest_before(sender.clone(), funding_id.clone(), support_money.clone())?;
+            match Self::not_invest_before(sender.clone(), funding_id.clone(), support_money.clone()){
+                // If the invest function meets error then revert the storage
+                Err(_e) => {
+                    <Fundings<T>>::remove(funding_id.clone());
+                    <FundingOwner<T>>::remove(funding_id.clone());
+                    <FundingsByBlockNumber>::mutate(expiry,|fundings| fundings.pop());
+                    <AllFundingArray<T>>::remove(&all_funding_count);
+                    <AllFundingCount<T>>::put(all_funding_count.clone());
+                    <AllFundingIndex<T>>::remove(funding_id.clone());
+                    <OwnedFundingArray<T>>::remove((sender.clone(), owned_funding_count.clone()));
+                    <OwnedFundingCount<T>>::remove(&sender);
+                    <OwnedFundingIndex<T>>::remove((sender.clone(), funding_id.clone()));
+                },
+                Ok(_v) => {}
+            }
         }
 
         // add the nonce

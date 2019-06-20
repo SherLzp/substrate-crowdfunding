@@ -132,28 +132,35 @@ decl_module! {
             let requests = Self::request_expire_at(expiry);
             ensure!(requests.len() < MAX_REQUESTS_PER_BLOCK, "Maximum number of requests is reached for the target block, try another block");
 
+            // Verify adding count is ok first
+            // Check adding all request count
+            let all_request_count = Self::all_request_count();
+            let new_all_request_count = all_request_count.checked_add(1).ok_or("Overflow adding a new request to total requests")?;
+
+            // Check adding requests of funding count
+            let request_of_funding_count = Self::request_of_funding_count(funding_id);
+            let new_request_of_funding_count = request_of_funding_count.checked_add(1).ok_or("Overflow adding a new request to the funding's requests")?;
+
+            // Check adding requests of owner count
+            let request_of_owner_count = Self::request_of_owner_count(&sender);
+            let new_request_of_owner_count = request_of_owner_count.checked_add(1).ok_or("Overflow adding a new request to the owner's requests")?;
+
             // change the global states
             <Requests<T>>::insert(request_id.clone(), new_request.clone());
             <RequestOwner<T>>::insert(request_id.clone(), sender.clone());
 
             <RequestsByBlockNumber<T>>::mutate(expiry, |requests| requests.push(request_id.clone()));
 
-            let all_request_count = Self::all_request_count();
-            let new_all_request_count = all_request_count.checked_add(1).ok_or("Overflow adding a new request to total requests")?;
             // change the state of all requests
             <AllRequestArray<T>>::insert(&all_request_count, request_id.clone());
             <AllRequestCount<T>>::put(new_all_request_count);
             <AllRequestIndex<T>>::insert(request_id.clone(), all_request_count);
 
-            let request_of_funding_count = Self::request_of_funding_count(funding_id);
-            let new_request_of_funding_count = request_of_funding_count.checked_add(1).ok_or("Overflow adding a new request to the funding's requests")?;
             // change the state of funding's requests
             <RequestOfFundingArray<T>>::insert((funding_id.clone(), request_of_funding_count.clone()), request_id.clone());
             <RequestOfFundingCount<T>>::insert(funding_id.clone(), new_request_of_funding_count);
             <RequestOfFundingIndex<T>>::insert((funding_id.clone(), request_id.clone()), request_of_funding_count);
 
-            let request_of_owner_count = Self::request_of_owner_count(&sender);
-            let new_request_of_owner_count = request_of_owner_count.checked_add(1).ok_or("Overflow adding a new request to the owner's requests")?;
             // change the state of owner's requests
             <RequestOfOwnerArray<T>>::insert((sender.clone(), request_of_owner_count.clone()), request_id.clone());
             <RequestOfOwnerCount<T>>::insert(sender.clone(), new_request_of_owner_count);
@@ -187,17 +194,17 @@ decl_module! {
             // Check if the number is bigger than half
             let invested_number = <funding_factory::Module<T>>::get_invested_number(request.funding_id);
             let half_number = invested_number.checked_div(2).ok_or("Error when get half of the invested number")?;
+            let supported_count = new_supported_request_count.clone();
+            // If the supported_count is bigger than the half, the request is success
+            if new_supported_request_count > half_number{
+                Self::can_use_balance(request_id, supported_count)?;
+            }
             // Change the investor voting status
             <VotedBefore<T>>::insert((sender.clone(), request_id.clone()), true);
             // Change the number of supporters
             <SupportedOfRequest<T>>::insert(request_id.clone(), new_supported_request_count.clone());
             // Deposit the Vote event
             Self::deposit_event(RawEvent::Vote(sender, request_id.clone()));
-            let supported_count = new_supported_request_count.clone();
-            // If the supported_count is bigger than the half, the request is success
-            if new_supported_request_count > half_number{
-                Self::can_use_balance(request_id, supported_count)?;
-            }
             Ok(())
         }
 
