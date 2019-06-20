@@ -245,7 +245,7 @@ impl<T: Trait> Module<T> {
                 Err(_e) => {
                     <Fundings<T>>::remove(funding_id.clone());
                     <FundingOwner<T>>::remove(funding_id.clone());
-                    <FundingsByBlockNumber>::mutate(expiry,|fundings| fundings.pop());
+                    <FundingsByBlockNumber<T>>::mutate(expiry,|fundings| fundings.pop());
                     <AllFundingArray<T>>::remove(&all_funding_count);
                     <AllFundingCount<T>>::put(all_funding_count.clone());
                     <AllFundingIndex<T>>::remove(funding_id.clone());
